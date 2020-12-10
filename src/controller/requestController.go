@@ -10,16 +10,16 @@ import (
 
 // Ping : Ping the target server
 func Ping(w http.ResponseWriter, r *http.Request) {
-	var targetRequestModel model.RequestModel
+	var requestModel model.RequestModel
 
-	err := json.NewDecoder(r.Body).Decode(&targetRequestModel)
+	err := json.NewDecoder(r.Body).Decode(&requestModel)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
 	r.Body.Close()
 
-	res, err := service.Ping(targetRequestModel.Domain)
+	res, err := service.Ping(requestModel.TargetServerURL)
 
 	if err != nil && res == 200 {
 		w.WriteHeader(http.StatusInternalServerError)

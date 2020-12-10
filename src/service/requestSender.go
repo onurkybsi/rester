@@ -3,6 +3,8 @@ package service
 import (
 	"net/http"
 	"time"
+
+	"github.com/onurkybsi/rester/src/model"
 )
 
 var tr = &http.Transport{
@@ -14,10 +16,8 @@ var tr = &http.Transport{
 var client = &http.Client{Transport: tr}
 
 // Ping : Send ping for checking server status.
-func Ping(domain string) (int, error) {
-	url := "http://" + domain
-
-	req, err := http.NewRequest("HEAD", url, nil)
+func Ping(targetServerURL string) (int, error) {
+	req, err := http.NewRequest(model.HeadMethod, targetServerURL, nil)
 
 	if err != nil {
 		return 0, err

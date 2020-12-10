@@ -2,5 +2,7 @@ package model
 
 // RequestModel struct
 type RequestModel struct {
-	Domain string `json:"domain"`
+	TargetServerURL string `json:"targetServeUrl"`
+	Method          string `json:"method"`
+	RequestBody     string `json:"requestBody"`
 }
