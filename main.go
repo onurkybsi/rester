@@ -1,19 +1,15 @@
 package main
 
 import (
-	"fmt"
-	"net/http"
-
-	"github.com/gorilla/mux"
-	"github.com/onurkybsi/rester/src/controller"
+	"github.com/onurkybsi/rester/app"
+	"github.com/onurkybsi/rester/config"
 )
 
 func main() {
-	router := mux.NewRouter()
+	config := config.GetConfig()
 
-	router.HandleFunc("/api/ping", controller.Ping).Methods("GET")
+	app := &app.App{}
+	app.Init(config)
 
-	fmt.Println("Listening on 8080...")
-
-	http.ListenAndServe(":8080", router)
+	app.Run(config.Port)
 }

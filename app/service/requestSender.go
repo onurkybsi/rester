@@ -4,7 +4,7 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/onurkybsi/rester/src/model"
+	"github.com/onurkybsi/rester/app/model"
 )
 
 var tr = &http.Transport{

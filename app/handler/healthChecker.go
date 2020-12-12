@@ -1,11 +1,11 @@
-package controller
+package handler
 
 import (
 	"encoding/json"
 	"net/http"
 
-	"github.com/onurkybsi/rester/src/model"
-	"github.com/onurkybsi/rester/src/service"
+	"github.com/onurkybsi/rester/app/model"
+	"github.com/onurkybsi/rester/app/service"
 )
 
 // Ping : Ping the target server
