@@ -20,7 +20,7 @@ type App struct {
 func (a *App) Init(config *config.Config) {
 	a.Router = mux.NewRouter()
 
-	a.get("/ping", handler.Ping)
+	a.post("/loadtest/reqSeq", handler.ReqSequential)
 }
 
 // Run Runs the server on the specified port

@@ -27,10 +27,45 @@ func Ping(targetServerURL string) (int, error) {
 
 	if err != nil {
 		return 0, err
-
 	}
 
 	resp.Body.Close()
 
 	return resp.StatusCode, nil
+}
+
+// SendSequentialReq send sequential requests
+func SendSequentialReq(sequentialReqModel model.SequentialReqModel) model.SequentialResModel {
+	result := model.SequentialResModel{
+		IsOperationSuccess: true,
+		Responses:          make([]model.ResModel, sequentialReqModel.NumberOfReq),
+	}
+
+	var totalElapsedTime int64
+
+	req, err := http.NewRequest(sequentialReqModel.ReqModel.Method, sequentialReqModel.ReqModel.TargetServerURL, sequentialReqModel.ReqModel.ReqBody)
+
+	if err != nil {
+		result.IsOperationSuccess = false
+
+		return result
+	}
+
+	for i := 0; i < sequentialReqModel.NumberOfReq; i++ {
+		start := time.Now()
+		_, err := client.Do(req)
+		elapsed := int64(time.Since(start) / time.Millisecond)
+
+		totalElapsedTime += elapsed
+
+		result.Responses = append(result.Responses, model.ResModel{TimeSpent: elapsed, DidErrOccur: err != nil, ErrMessage: "err occured when request to target"})
+
+		if sequentialReqModel.TimeSpanAsMs > 0 {
+			time.Sleep(time.Duration(sequentialReqModel.TimeSpanAsMs))
+		}
+	}
+
+	result.AvgElapsedMs = totalElapsedTime / int64(sequentialReqModel.NumberOfReq)
+
+	return result
 }
