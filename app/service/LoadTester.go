@@ -11,15 +11,13 @@ import (
 )
 
 var tr = &http.Transport{
-	MaxIdleConns:       10,
 	IdleConnTimeout:    30 * time.Second,
 	DisableCompression: true,
 }
 
 var client = &http.Client{Transport: tr}
 
-// Ping : Send ping for checking server status.
-func Ping(targetServerURL string) (int, error) {
+func ping(targetServerURL string) (int, error) {
 	req, err := http.NewRequest(model.HeadMethod, targetServerURL, nil)
 
 	if err != nil {
@@ -37,6 +35,24 @@ func Ping(targetServerURL string) (int, error) {
 	return resp.StatusCode, nil
 }
 
+func prepareReqForSeq(sequentialReqModel *model.SequentialReqModel) *http.Request {
+	req := &http.Request{}
+
+	var bearerToken string = "Bearer " + sequentialReqModel.ReqModel.BearerToken
+	req.Header.Add("Authorization", bearerToken)
+	req.Header.Add("Content-Type", "application/json; charset=utf8")
+
+	requestByte, _ := json.Marshal(sequentialReqModel.ReqModel.ReqBody)
+	req, err := http.NewRequest(sequentialReqModel.ReqModel.Method, sequentialReqModel.ReqModel.TargetServerURL, bytes.NewReader(requestByte))
+
+	if err != nil {
+
+		return nil
+	}
+
+	return req
+}
+
 // SendSequentialReq send sequential requests
 func SendSequentialReq(sequentialReqModel model.SequentialReqModel) model.SequentialResModel {
 	result := model.SequentialResModel{
@@ -46,18 +62,7 @@ func SendSequentialReq(sequentialReqModel model.SequentialReqModel) model.Sequen
 
 	var totalElapsedTime int64
 
-	requestByte, _ := json.Marshal(sequentialReqModel.ReqModel.ReqBody)
-	req, err := http.NewRequest(sequentialReqModel.ReqModel.Method, sequentialReqModel.ReqModel.TargetServerURL, bytes.NewReader(requestByte))
-
-	if err != nil {
-		result.IsOperationSuccess = false
-
-		return result
-	}
-
-	var bearerToken string = "Bearer " + sequentialReqModel.ReqModel.BearerToken
-	req.Header.Add("Authorization", bearerToken)
-	req.Header.Add("Content-Type", "application/json; charset=utf8")
+	req := prepareReqForSeq(&sequentialReqModel)
 
 	for i := 0; i < sequentialReqModel.NumberOfReq; i++ {
 		start := time.Now()
