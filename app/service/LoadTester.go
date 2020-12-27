@@ -1,6 +1,9 @@
 package service
 
 import (
+	"bytes"
+	"encoding/json"
+	"fmt"
 	"net/http"
 	"time"
 
@@ -43,7 +46,8 @@ func SendSequentialReq(sequentialReqModel model.SequentialReqModel) model.Sequen
 
 	var totalElapsedTime int64
 
-	req, err := http.NewRequest(sequentialReqModel.ReqModel.Method, sequentialReqModel.ReqModel.TargetServerURL, sequentialReqModel.ReqModel.ReqBody)
+	requestByte, _ := json.Marshal(sequentialReqModel.ReqModel.ReqBody)
+	req, err := http.NewRequest(sequentialReqModel.ReqModel.Method, sequentialReqModel.ReqModel.TargetServerURL, bytes.NewReader(requestByte))
 
 	if err != nil {
 		result.IsOperationSuccess = false
@@ -51,10 +55,16 @@ func SendSequentialReq(sequentialReqModel model.SequentialReqModel) model.Sequen
 		return result
 	}
 
+	var bearerToken string = "Bearer " + sequentialReqModel.ReqModel.BearerToken
+	req.Header.Add("Authorization", bearerToken)
+	req.Header.Add("Content-Type", "application/json; charset=utf8")
+
 	for i := 0; i < sequentialReqModel.NumberOfReq; i++ {
 		start := time.Now()
-		_, err := client.Do(req)
+		res, err := client.Do(req)
 		elapsed := int64(time.Since(start) / time.Millisecond)
+
+		fmt.Println(res)
 
 		totalElapsedTime += elapsed
 
