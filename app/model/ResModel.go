@@ -6,4 +6,5 @@ type ResModel struct {
 	TimeSpent   int64  `json:"timeSpent"`
 	DidErrOccur bool   `json:"didErrOccur"`
 	ErrMessage  string `json:"errMessage"`
+	Status      string `json:"status"`
 }

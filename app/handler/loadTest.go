@@ -2,7 +2,6 @@ package handler
 
 import (
 	"encoding/json"
-	"fmt"
 	"net/http"
 
 	"github.com/onurkybsi/rester/app/model"
@@ -19,8 +18,6 @@ func ReqSequential(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	r.Body.Close()
-
-	fmt.Println(sequentialReqModel.ReqModel.ReqBody)
 
 	res := service.SendSequentialReq(sequentialReqModel)
 

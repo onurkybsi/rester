@@ -3,7 +3,7 @@ package service
 import (
 	"bytes"
 	"encoding/json"
-	"fmt"
+	"errors"
 	"net/http"
 	"time"
 
@@ -35,52 +35,59 @@ func ping(targetServerURL string) (int, error) {
 	return resp.StatusCode, nil
 }
 
-func prepareReqForSeq(sequentialReqModel *model.SequentialReqModel) *http.Request {
-	req := &http.Request{}
-
-	var bearerToken string = "Bearer " + sequentialReqModel.ReqModel.BearerToken
-	req.Header.Add("Authorization", bearerToken)
-	req.Header.Add("Content-Type", "application/json; charset=utf8")
-
+func createSeqReq(sequentialReqModel *model.SequentialReqModel) (*http.Request, error) {
 	requestByte, _ := json.Marshal(sequentialReqModel.ReqModel.ReqBody)
 	req, err := http.NewRequest(sequentialReqModel.ReqModel.Method, sequentialReqModel.ReqModel.TargetServerURL, bytes.NewReader(requestByte))
 
 	if err != nil {
 
-		return nil
+		return nil, errors.New("Error occurred when request create")
 	}
 
-	return req
+	var bearerToken string = "Bearer " + sequentialReqModel.ReqModel.BearerToken
+	req.Header.Add("Authorization", bearerToken)
+	req.Header.Add("Content-Type", "application/json")
+
+	return req, nil
 }
 
 // SendSequentialReq send sequential requests
 func SendSequentialReq(sequentialReqModel model.SequentialReqModel) model.SequentialResModel {
 	result := model.SequentialResModel{
 		IsOperationSuccess: true,
-		Responses:          make([]model.ResModel, sequentialReqModel.NumberOfReq),
-	}
+		Responses:          []model.ResModel{}}
 
 	var totalElapsedTime int64
-
-	req := prepareReqForSeq(&sequentialReqModel)
+	var timeSpan time.Duration = time.Duration(sequentialReqModel.TimeSpanAsMs)
+	var numberWithoutErrors int64
 
 	for i := 0; i < sequentialReqModel.NumberOfReq; i++ {
+		req, err := createSeqReq(&sequentialReqModel)
+
+		if err != nil {
+			result.Responses = append(result.Responses, model.ResModel{TimeSpent: 0, DidErrOccur: true, ErrMessage: err.Error()})
+			continue
+		}
+
 		start := time.Now()
 		res, err := client.Do(req)
 		elapsed := int64(time.Since(start) / time.Millisecond)
 
-		fmt.Println(res)
+		if err == nil {
+			numberWithoutErrors++
+			totalElapsedTime += elapsed
 
-		totalElapsedTime += elapsed
-
-		result.Responses = append(result.Responses, model.ResModel{TimeSpent: elapsed, DidErrOccur: err != nil, ErrMessage: "err occured when request to target"})
+			result.Responses = append(result.Responses, model.ResModel{TimeSpent: elapsed, DidErrOccur: false, Status: res.Status})
+		} else {
+			result.Responses = append(result.Responses, model.ResModel{TimeSpent: elapsed, DidErrOccur: true, ErrMessage: err.Error()})
+		}
 
 		if sequentialReqModel.TimeSpanAsMs > 0 {
-			time.Sleep(time.Duration(sequentialReqModel.TimeSpanAsMs))
+			time.Sleep(timeSpan)
 		}
 	}
 
-	result.AvgElapsedMs = totalElapsedTime / int64(sequentialReqModel.NumberOfReq)
+	result.AvgElapsedMs = totalElapsedTime / numberWithoutErrors
 
 	return result
 }
