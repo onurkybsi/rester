@@ -21,6 +21,7 @@ func (a *App) Init(config *config.Config) {
 	a.Router = mux.NewRouter()
 
 	a.post("/loadtest/reqSeq", handler.ReqSequential)
+	a.post("/loadtest/reqSimultaneously", handler.ReqSequential)
 }
 
 // Run Runs the server on the specified port

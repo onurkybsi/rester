@@ -24,3 +24,20 @@ func ReqSequential(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(res)
 }
+
+// ReqSimultaneously provide seq req
+func ReqSimultaneously(w http.ResponseWriter, r *http.Request) {
+	var simultaneousReqModel model.SimultaneousReqModel
+
+	err := json.NewDecoder(r.Body).Decode(&simultaneousReqModel)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+	r.Body.Close()
+
+	res := service.SendMultipleReqSimultaneously(simultaneousReqModel)
+
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(res)
+}
