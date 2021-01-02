@@ -15,59 +15,49 @@ var tr = &http.Transport{
 
 var client = &http.Client{Transport: tr}
 
-func processSimultaneousReq(context *model.SimultaneousReqContext) {
-	req, err := CreateReq(context.ReqModel)
-
-	if err != nil {
-		context.Responses = append(context.Responses, model.ResModel{DidErrOccured: true, ErrMessage: err.Error()})
-
-		return
-	}
-
-	res, err := SendReq(req)
-
-	context.Responses = append(context.Responses, *res)
-
-	defer context.WaitGroup.Done()
-}
-
 // SendSequentialReq send sequential requests
 func SendSequentialReq(sequentialReqModel model.SequentialReqModel) model.TestResult {
 	result := model.TestResult{
 		IsOperationSuccess: true,
 		Responses:          make([]model.ResModel, sequentialReqModel.NumberOfReq)}
 
-	var totalElapsedTime int64
-	var timeSpan time.Duration = time.Duration(sequentialReqModel.TimeSpanAsMs)
-	var numberWithoutErrors int64
+	context := getSequentialReqContext(&sequentialReqModel)
 
-	for i := 0; i < sequentialReqModel.NumberOfReq; i++ {
-		req, err := CreateReq(&sequentialReqModel.ReqModel)
+	processSequentialReq(context, &result)
 
+	result.AvgElapsedMs = context.TotalElapsedTime / context.NumberWithoutErrors
+
+	return result
+}
+
+func getSequentialReqContext(sequentialReqModel *model.SequentialReqModel) *model.SequentialReqContext {
+	context := &model.SequentialReqContext{
+		SequentialReqModel:  sequentialReqModel,
+		TotalElapsedTime:    0,
+		NumberWithoutErrors: 0}
+
+	return context
+}
+
+func processSequentialReq(context *model.SequentialReqContext, result *model.TestResult) {
+	for i := 0; i < context.SequentialReqModel.NumberOfReq; i++ {
+		req, err := CreateReq(&context.SequentialReqModel.ReqModel)
 		if err != nil {
-			result.Responses = append(result.Responses, model.ResModel{TimeSpent: 0, DidErrOccured: true, ErrMessage: err.Error()})
+			result.Responses = append(result.Responses, model.ResModel{DidErrOccured: true, ErrMessage: err.Error()})
 			continue
 		}
 
 		res, err := SendReq(req)
-
 		if err == nil {
-			numberWithoutErrors++
-			totalElapsedTime += res.TimeSpent
-
-			result.Responses = append(result.Responses, *res)
-		} else {
-			result.Responses = append(result.Responses, *res)
+			context.NumberWithoutErrors++
+			context.TotalElapsedTime += res.TimeSpent
 		}
+		result.Responses = append(result.Responses, *res)
 
-		if sequentialReqModel.TimeSpanAsMs > 0 {
-			time.Sleep(timeSpan)
+		if context.SequentialReqModel.TimeSpanAsMs > 0 {
+			time.Sleep(time.Duration(context.SequentialReqModel.TimeSpanAsMs))
 		}
 	}
-
-	result.AvgElapsedMs = totalElapsedTime / numberWithoutErrors
-
-	return result
 }
 
 // SendMultipleReqSimultaneously send multiple requests simultaaneously
@@ -87,4 +77,19 @@ func SendMultipleReqSimultaneously(simultaneousReqModel model.SimultaneousReqMod
 	wg.Wait()
 
 	return result
+}
+
+func processSimultaneousReq(context *model.SimultaneousReqContext) {
+	req, err := CreateReq(context.ReqModel)
+
+	if err != nil {
+		context.Responses = append(context.Responses, model.ResModel{DidErrOccured: true, ErrMessage: err.Error()})
+		return
+	}
+
+	res, err := SendReq(req)
+
+	context.Responses = append(context.Responses, *res)
+
+	defer context.WaitGroup.Done()
 }
