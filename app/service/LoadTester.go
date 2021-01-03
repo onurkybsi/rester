@@ -19,7 +19,7 @@ var client = &http.Client{Transport: tr}
 func SendSequentialReq(sequentialReqModel model.SequentialReqModel) model.TestResult {
 	result := model.TestResult{
 		IsOperationSuccess: true,
-		Responses:          make([]model.ResModel, sequentialReqModel.NumberOfReq)}
+		Responses:          make([]model.ResModel, 0, sequentialReqModel.NumberOfReq)}
 
 	context := getSequentialReqContext(&sequentialReqModel)
 
